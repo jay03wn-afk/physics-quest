@@ -862,11 +862,14 @@ function Quiz(root,si,gate){
     const nextOk=si<STAGES.length-1;
     const act=h('div',{class:'actions',style:'justify-content:center'},
       h('button',{type:'button',class:'btn',onclick:()=>go(Home)},'回到地圖'),
-      si<STAGES.length-1?h('button',{type:'button',class:'btn acc',onclick:()=>go(()=>Stage(si+1))},'前往第 '+(si+2)+' 關'):
-        h('button',{type:'button',class:'btn acc',onclick:()=>go(Cert)},'領取通關證書'));
+      (function(){
+        if(allDone())return h('button',{type:'button',class:'btn acc',onclick:()=>go(Cert)},'領取通關證書');
+        const nx=STAGES.findIndex((x,j)=>j!==si&&!stageDone(j));
+        return h('button',{type:'button',class:'btn acc',onclick:()=>go(()=>Stage(nx))},'前往第 '+(nx+1)+' 關');
+      })());
     root.append(h('div',{class:'clear'},h('div',{class:'seal',html:seal(S.acc,String(si+1),130)}),h('h3',null,'第 '+(si+1)+' 關通過'),
       h('p',null,h('span',{class:'stars',style:'font-size:22px'},'★'.repeat(sc)+'☆'.repeat(n-sc))),
-      h('p',{style:'color:#5E5B4C;margin:4px 0 10px'},sc===n?'全部一次答對，太強了。':'星星是一次就答對的題數，可以再回來挑戰。'),act));
+      h('p',{style:'color:#5E5B4C;margin:4px 0 10px'},sc===n?'全部一次答對，太強了。':'星星是一次就答對的題數，可以再回來挑戰。'),allDone()?null:h('p',{style:'margin:0 0 10px'},'還有 '+STAGES.filter((x,j)=>!stageDone(j)).length+' 關沒通過，全部通過才能領證書。'),act));
   }
   function question(k){
     const q=S.qs[k];let attempts=0,solved=false;
@@ -928,6 +931,7 @@ function Quiz(root,si,gate){
 
 /* ---------- 證書 ---------- */
 function Cert(){
+  if(!allDone()){Home();return;}
   const ts=totalStars(),acc=ts/totalQ;
   const rank=acc>=.9?'光聲大師':acc>=.7?'實驗達人':'闖關勇者';
   const d=new Date();const date=`${d.getFullYear()} / ${d.getMonth()+1} / ${d.getDate()}`;
