@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>光與聲闖關基地</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<style>
+/* 設計方向：標本冊的標籤質感 + 方格筆記紙。大地色系，每一關各有一個實驗用色。 */
+:root{
+  --paper:#F2E6D5; --sand:#D9C4B1; --clay:#B79C8E; --bark:#8F7B69; --moss:#5E5B4C;
+  --ink:#3C3A3A; --deep:#2B2A29; --card:#FBF6EC; --ok:#4E7A4F; --bad:#A4473B;
+  --acc:#2F7F86;
+  --font:'Huninn','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{
+  margin:0;background-color:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.7;font-size:16px;
+  -webkit-text-size-adjust:100%;
+}
+button,input{font-family:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 80px}
+h1,h2,h3,p{margin:0;text-wrap:balance}
+:focus-visible{outline:3px solid var(--deep);outline-offset:2px}
+
+/* ---------- 標籤卡 ---------- */
+.label{background:var(--card);border:1.6px solid var(--ink);border-radius:6px;box-shadow:4px 4px 0 var(--sand)}
+.ptag{display:inline-block;background:var(--acc);color:#fff;font-size:14px;padding:1px 12px;border-radius:0 0 6px 6px;margin:-1px 0 0 14px}
+
+/* ---------- 首頁 ---------- */
+.hero{padding:30px 0 6px;position:relative}
+.scope{display:inline-block;border:1.6px dashed var(--bark);border-radius:4px;padding:3px 12px;font-size:14px;color:var(--moss);background:var(--card)}
+.hero h1{font-size:clamp(40px,8vw,76px);line-height:1.12;letter-spacing:.04em;margin:14px 0 10px;color:var(--deep)}
+.hero h1 span{display:block;font-size:.5em;letter-spacing:.2em;color:var(--bark);margin-top:6px}
+.hero p.lead{max-width:34em;color:var(--moss);font-size:17px}
+.heroWave{display:block;width:100%;height:84px;margin-top:8px}
+.prog{display:flex;align-items:center;gap:14px;margin:12px 0 22px;flex-wrap:wrap}
+.bar{flex:1;min-width:180px;height:14px;border:1.6px solid var(--ink);border-radius:8px;background:var(--card);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--moss);width:0;transition:width .5s}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:20px}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;padding:16px 18px 16px 0;position:relative;
+  background:var(--card);border:1.6px solid var(--ink);border-radius:6px;box-shadow:4px 4px 0 var(--sand);transition:transform .15s,box-shadow .15s}
+.tile:hover:not([aria-disabled=true]){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--clay)}
+.tile:focus-visible{outline:3px solid var(--deep);outline-offset:3px}
+.tile[aria-disabled=true]{cursor:not-allowed;opacity:.55;background:#EFE4D2}
+.tile .no{grid-row:1/4;width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--acc);color:#fff;margin:-16px 0 -16px 0;border-radius:4px 0 0 4px;font-size:30px;line-height:1}
+.tile .no small{font-size:12px;letter-spacing:.1em}
+.tile .no svg{width:30px;height:30px;margin-top:6px}
+.tile h2{font-size:22px;line-height:1.3}
+.tile .fx{font-size:14px;color:var(--moss)}
+.tile .st{font-size:14px;display:flex;gap:10px;align-items:center;color:var(--bark)}
+.stars{letter-spacing:2px;color:#B8863B}
+.tile.done .no::after{content:"通過";font-size:12px;margin-top:6px;background:#fff;color:var(--acc);border-radius:10px;padding:0 8px}
+.certTile{--acc:#8F7B69}
+
+/* ---------- 關卡 ---------- */
+.top{display:flex;align-items:center;gap:12px;padding:18px 0 10px;flex-wrap:wrap}
+.ghost{background:transparent;border:1.6px solid var(--ink);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:15px;min-height:40px}
+.ghost:hover{background:var(--sand)}
+.stageTitle{font-size:clamp(26px,4.5vw,40px);line-height:1.25}
+.stageTitle em{font-style:normal;color:var(--acc)}
+.stageGrid{display:grid;gap:22px;grid-template-columns:minmax(0,1fr);margin-top:10px}
+@media(min-width:1000px){.stageGrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}}
+.panel{padding:14px 18px 20px;min-width:0}
+.panel>.ptag{margin-left:0;margin-top:-15px;margin-bottom:10px}
+.mission{background:#F3E9D8;border-left:5px solid var(--acc);padding:8px 14px;border-radius:0 6px 6px 0;margin:6px 0 14px;font-size:16px}
+.cvwrap{border:1.4px solid var(--bark);border-radius:6px;background:var(--card);overflow:hidden;margin:10px 0}
+canvas{display:block;width:100%}
+.ctls{display:grid;gap:12px;margin-top:12px}
+.ctl{display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:center}
+.ctl label{font-size:15px}
+.ctl .sv{font-variant-numeric:tabular-nums;font-size:17px;color:var(--deep);font-weight:700}
+.ctl input[type=range]{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:36px;background:transparent;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:var(--sand);border:1.4px solid var(--bark)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:var(--sand);border:1.4px solid var(--bark)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-12px;border-radius:50%;background:var(--acc);border:2.5px solid var(--deep)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--acc);border:2.5px solid var(--deep)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
+.segbtn{background:transparent;border:1.6px solid var(--ink);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:15px;min-height:40px}
+.segbtn[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.segbtn:not([aria-selected=true]):hover{background:var(--sand)}
+.btn{background:var(--ink);color:var(--paper);border:1.6px solid var(--ink);border-radius:6px;padding:9px 20px;font-size:16px;cursor:pointer;min-height:44px;box-shadow:3px 3px 0 var(--clay)}
+.btn:hover{background:var(--deep)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--clay)}
+.btn.acc{background:var(--acc);border-color:var(--deep)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.readout{background:#F3E9D8;border:1.4px dashed var(--bark);border-radius:6px;padding:10px 14px;margin-top:12px;font-variant-numeric:tabular-nums}
+.readout .big{font-size:clamp(20px,3.6vw,26px);color:var(--deep);line-height:1.4}
+.readout .big b{color:var(--acc)}
+.readout .sm{font-size:14px;color:var(--moss)}
+.chip{display:inline-block;border-radius:20px;padding:1px 12px;font-size:14px;border:1.4px solid var(--ink);background:var(--card)}
+.chip.good{background:var(--ok);color:#fff;border-color:var(--ok)}
+.chip.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+details.pts{margin-top:18px;padding:10px 18px}
+details.pts summary{cursor:pointer;font-size:16px}
+details.pts .kt{margin:12px 0 4px}
+.ktt{font-size:15px;margin-bottom:4px;color:var(--deep)}
+.ktw{overflow-x:auto}
+.kt table{border-collapse:collapse;width:100%;font-size:15.5px;text-align:center}
+.kt th{background:var(--acc);color:#fff;font-weight:400;padding:4px 10px;border:1.4px solid var(--ink);white-space:nowrap}
+.kt td{padding:4px 10px;border:1.4px solid var(--ink);background:#fff;line-height:1.5}
+.kt tbody tr:nth-child(even) td{background:#F6EEDF}
+.kt td:first-child{font-weight:700;color:var(--deep)}
+
+/* ---------- 題目 ---------- */
+.pills{display:flex;gap:6px;margin:4px 0 12px;flex-wrap:wrap}
+.pill{width:30px;height:30px;border-radius:50%;border:1.6px solid var(--ink);display:grid;place-items:center;font-size:14px;background:var(--card)}
+.pill.on{background:var(--ink);color:var(--paper)}
+.pill.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.qcard{border-top:1.6px dashed var(--bark);padding-top:14px}
+.qtext{font-size:18px;line-height:1.65;margin-bottom:12px}
+.opts{display:grid;gap:10px}
+.opt{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border:1.6px solid var(--ink);border-radius:6px;background:var(--card);min-height:48px;font-size:16.5px;line-height:1.5}
+.opt:hover:not([disabled]){background:var(--sand)}
+.opt:focus-visible{outline:3px solid var(--deep);outline-offset:2px}
+.opt .ltr{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:14px;margin-top:1px}
+.opt.wrong{background:#EBD3CC;border-color:var(--bad);text-decoration:line-through;text-decoration-color:var(--bad);opacity:.8}
+.opt.right{background:#D7E5D2;border-color:var(--ok)}
+.opt[disabled]{cursor:default}
+.fb{margin-top:14px;padding:10px 14px;border-radius:6px;font-size:16px;line-height:1.65}
+.fb.hint{background:#F6E3C8;border:1.4px solid #B8863B}
+.fb.good{background:#DDEAD8;border:1.4px solid var(--ok)}
+.fb b{display:block;margin-bottom:2px}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.sortrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dotted var(--clay)}
+.sortrow.bad{background:#EBD3CC}
+.sortrow.good{background:#DDEAD8}
+.sortrow .segbtn{padding:4px 10px;min-height:36px}
+.lock{padding:22px 16px;text-align:center;border:1.6px dashed var(--bark);border-radius:6px;background:#F3E9D8}
+.lock b{font-size:20px}
+.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px}
+.stamp{border:1.6px dashed var(--bark);border-radius:6px;padding:6px 10px;font-size:14px;line-height:1.45;background:#F3E9D8;min-height:64px}
+.stamp b{display:block;font-size:15px}
+.stamp.got{border-style:solid;border-color:var(--acc);background:#fff;animation:pop .45s}
+.stamp.got b{color:var(--acc)}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
+.clear{text-align:center;padding:16px 8px}
+.clear .seal{width:130px;height:130px;margin:0 auto 6px;animation:stampin .6s cubic-bezier(.2,1.3,.4,1)}
+@keyframes stampin{0%{transform:scale(2.2) rotate(-18deg);opacity:0}100%{transform:scale(1) rotate(-6deg);opacity:1}}
+.clear h3{font-size:26px}
+
+/* ---------- 證書 ---------- */
+.cert{position:relative;max-width:760px;margin:12px auto 0;background:#FFFCF4;border:2px solid var(--deep);padding:10px;box-shadow:6px 6px 0 var(--sand)}
+.cert .in{border:5px double var(--bark);padding:28px 22px 26px;text-align:center;position:relative}
+.cert h2{font-size:clamp(34px,7vw,54px);letter-spacing:.3em;color:var(--deep);margin-right:-.3em}
+.cert .sub{color:var(--moss);margin:4px 0 18px}
+.nameIn{width:min(420px,90%);text-align:center;font-size:clamp(26px,5vw,36px);background:transparent;border:0;border-bottom:2px solid var(--ink);padding:4px;color:var(--deep);border-radius:0}
+.nameIn::placeholder{color:var(--clay);font-size:.6em}
+.cert p.body{max-width:30em;margin:16px auto;font-size:17px}
+.rank{display:inline-block;font-size:24px;border:2px solid var(--acc);color:var(--acc);padding:2px 22px;border-radius:6px;margin:6px 0;transform:rotate(-2deg)}
+.seals{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.seals svg{width:62px;height:62px}
+.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--moss);margin-top:14px;border-top:1.4px dashed var(--bark);padding-top:10px}
+.shotTip{text-align:center;margin:18px 0 6px;font-size:17px}
+
+.sr{position:absolute;left:-9999px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:520px){.panel{padding:12px 12px 18px}.qtext{font-size:17px}.tile{grid-template-columns:auto 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   小工具
+   ========================================================= */
+const FONT='Huninn,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+const C={paper:'#F2E6D5',sand:'#D9C4B1',clay:'#B79C8E',bark:'#8F7B69',moss:'#5E5B4C',ink:'#3C3A3A',deep:'#2B2A29',card:'#FBF6EC',ok:'#4E7A4F',bad:'#A4473B',
+  r1:'#B5523B',r2:'#2F7F86',r3:'#B8863B'};
+const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function h(tag,props,...kids){
+  const e=document.createElement(tag);
+  for(const k in (props||{})){const v=props[k];
+    if(k==='class')e.className=v;
+    else if(k==='html')e.innerHTML=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v);}
+  kids.flat(9).forEach(k=>{if(k==null||k===false)return;e.append(k.nodeType?k:document.createTextNode(k));});
+  return e;
+}
+const n2=(x,d=2)=>Number(Number(x).toFixed(d));
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function txt(ctx,s,x,y,o={}){ctx.save();ctx.font=(o.w||400)+' '+(o.s||14)+'px '+FONT;ctx.fillStyle=o.c||C.ink;ctx.textAlign=o.a||'left';ctx.textBaseline=o.b||'alphabetic';ctx.fillText(s,x,y);ctx.restore();}
+function ln(ctx,x1,y1,x2,y2,col,w,dash){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||2;if(dash)ctx.setLineDash(dash);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+function head(ctx,x,y,ang,col,sz){sz=sz||9;ctx.save();ctx.fillStyle=col;ctx.translate(x,y);ctx.rotate(ang);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-sz,-sz*.5);ctx.lineTo(-sz,sz*.5);ctx.closePath();ctx.fill();ctx.restore();}
+function rayArrow(ctx,x1,y1,x2,y2,col,w,dash){ln(ctx,x1,y1,x2,y2,col,w,dash);head(ctx,x2,y2,Math.atan2(y2-y1,x2-x1),col,9);}
+function vArrow(ctx,x,y0,y1,col,w,dash){ // 垂直箭頭（物、像）
+  ln(ctx,x,y0,x,y1,col,w||4,dash);const up=y1<y0;head(ctx,x,y1,up?-Math.PI/2:Math.PI/2,col,11);}
+function arc(ctx,x,y,r,a0,a1,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||2;ctx.beginPath();ctx.arc(x,y,r,a0,a1);ctx.stroke();ctx.restore();}
+
+/* 會跟著寬度重畫的畫布 */
+function mkCanvas(parent,hFn){
+  const cv=document.createElement('canvas');parent.appendChild(cv);
+  const o={cv,ctx:cv.getContext('2d'),W:300,H:200};
+  let _d=function(){};
+  Object.defineProperty(o,'draw',{get:()=>_d,set:f=>{_d=f;f();}});
+  let lastW=0;
+  o.resize=function(force){
+    const w=Math.max(250,Math.floor(parent.clientWidth||300));
+    if(w===lastW&&!force)return;lastW=w;
+    const hh=Math.round(hFn(w)),d=window.devicePixelRatio||1;
+    cv.width=w*d;cv.height=hh*d;cv.style.height=hh+'px';
+    o.ctx.setTransform(d,0,0,d,0,0);o.W=w;o.H=hh;o.draw();
+  };
+  let ro=null;
+  if(window.ResizeObserver){ro=new ResizeObserver(()=>o.resize());ro.observe(parent);}
+  o.destroy=()=>{if(ro)ro.disconnect();};
+  o.resize(true);
+  return o;
+}
+function drawBg(o){o.ctx.clearRect(0,0,o.W,o.H);o.ctx.fillStyle=C.card;o.ctx.fillRect(0,0,o.W,o.H);}
+
+let uid=0;
+function slider(o){
+  const id='sl'+(++uid);
+  const out=h('output',{for:id,class:'sv'});
+  const inp=h('input',{type:'range',id,min:o.min,max:o.max,step:o.step,value:o.val});
+  const upd=()=>{const v=+inp.value;out.textContent=(o.fmt?o.fmt(v):v)+(o.unit||'');};
+  inp.addEventListener('input',()=>{upd();o.onInput&&o.onInput(+inp.value);});
+  upd();
+  return {el:h('div',{class:'ctl'},h('label',{for:id},o.label),out,inp),get:()=>+inp.value,set:v=>{inp.value=v;upd();}};
+}
+function seg(options,val,onChange){
+  const box=h('div',{class:'seg',role:'group'});const bs=[];
+  options.forEach(([k,label])=>{const b=h('button',{type:'button',class:'segbtn','aria-selected':String(k===val),onclick:()=>{cur=k;bs.forEach((x,i)=>x.setAttribute('aria-selected',String(options[i][0]===k)));onChange(k);}},label);bs.push(b);box.append(b);});
+  let cur=val;return {el:box,get:()=>cur};
+}
+function tabbed(root,items){
+  const bar=h('div',{class:'seg',role:'tablist'}),body=h('div');root.append(bar,body);
+  let d=null;const bs=[];
+  function sel(i){if(d&&d.destroy)d.destroy();body.innerHTML='';d=items[i].build(body)||null;bs.forEach((b,j)=>b.setAttribute('aria-selected',String(i===j)));}
+  items.forEach((it,i)=>{const b=h('button',{type:'button',role:'tab',class:'segbtn','aria-selected':'false',onclick:()=>sel(i)},it.label);bs.push(b);bar.append(b);});
+  sel(0);
+  return {destroy(){if(d&&d.destroy)d.destroy();}};
+}
+function loop(fn){let raf=0,on=true,last=performance.now();
+  (function f(t){if(!on)return;const dt=Math.min(.05,(t-last)/1000);last=t;fn(dt);raf=requestAnimationFrame(f);})(last);
+  return ()=>{on=false;cancelAnimationFrame(raf);};}
+
+/* =========================================================
+   共用繪圖
+   ========================================================= */
+function drawWaveSnap(ctx,W,H,lamPx,A,ph,col,bracket){
+  const cy=H*.5;
+  ln(ctx,0,cy,W,cy,C.sand,1.5,[5,5]);
+  ctx.save();ctx.beginPath();ctx.lineWidth=3.5;ctx.strokeStyle=col;ctx.lineJoin='round';
+  for(let x=0;x<=W;x+=2){const y=cy-A*Math.sin(2*Math.PI*x/lamPx-ph);x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();ctx.restore();
+  if(bracket){
+    const P=2*Math.PI;let x0=(((Math.PI/2+ph)%P)+P)%P*lamPx/P;
+    while(x0<14)x0+=lamPx;
+    if(x0+lamPx<W-8){
+      const y=cy-A-14;
+      ln(ctx,x0,y,x0+lamPx,y,C.deep,2);ln(ctx,x0,y-5,x0,y+5,C.deep,2);ln(ctx,x0+lamPx,y-5,x0+lamPx,y+5,C.deep,2);
+      txt(ctx,'λ',x0+lamPx/2,y-6,{a:'center',s:17,w:700,c:C.deep});
+      ln(ctx,x0,cy-A,x0,y,C.clay,1,[3,3]);ln(ctx,x0+lamPx,cy-A,x0+lamPx,y,C.clay,1,[3,3]);
+    }
+  }
+}
+function drawPinhole(ctx,W,H,u,s){
+  const cy=H*.5,px=W*.42,unit=W*.40/10,oh=H*.14,xo=px-u*unit,xs=px+s*unit;
+  ctx.fillStyle=C.card;ctx.fillRect(0,0,W,H);
+  ln(ctx,0,cy,W,cy,C.sand,1.3,[4,5]);
+  // 隔板
+  ln(ctx,px,4,px,cy-4,C.ink,5);ln(ctx,px,cy+4,px,H-4,C.ink,5);
+  txt(ctx,'小孔',px,H-8,{a:'center',s:13,c:C.moss});
+  // 紙屏
+  ctx.fillStyle='#fff';ctx.fillRect(xs-3,6,6,H-12);ctx.strokeStyle=C.bark;ctx.lineWidth=1.5;ctx.strokeRect(xs-3,6,6,H-12);
+  txt(ctx,'紙屏',xs,H-8,{a:'center',s:13,c:C.moss});
+  // 光線
+  const ih=oh*s/u,tipY=Math.min(H-8,cy+ih);
+  ln(ctx,xo,cy-oh,px,cy,C.r3,2.2);ln(ctx,px,cy,xs,cy+ih,C.r3,2.2);
+  // 物與像
+  vArrow(ctx,xo,cy,cy-oh,C.ink,4);
+  ctx.beginPath();ctx.fillStyle='#E3A33B';ctx.arc(xo,cy-oh-6,5,0,7);ctx.fill();
+  txt(ctx,'蠟燭',xo,H-8,{a:'center',s:13,c:C.moss});
+  vArrow(ctx,xs,cy,tipY,C.r1,4);
+  // 距離標示
+  const yy=14;
+  ln(ctx,xo,yy,px,yy,C.deep,1.5);txt(ctx,'u = '+u,(xo+px)/2,yy-3,{a:'center',s:14,w:700});
+  ln(ctx,px,yy,xs,yy,C.deep,1.5);txt(ctx,'s = '+s,(px+xs)/2,yy-3,{a:'center',s:14,w:700});
+}
+function drawReflect(ctx,W,H,th){
+  const cx=W/2,my=H*.80,R=H*.62,t=th*Math.PI/180;
+  ctx.fillStyle=C.card;ctx.fillRect(0,0,W,H);
+  ln(ctx,W*.1,my,W*.9,my,C.deep,5);
+  for(let x=W*.1;x<W*.9;x+=12)ln(ctx,x,my+3,x-8,my+13,C.bark,1.5);
+  ln(ctx,cx,H*.06,cx,my,C.moss,1.6,[6,5]);txt(ctx,'法線',cx+6,H*.1,{s:13,c:C.moss});
+  const ix=cx-R*Math.sin(t),iy=my-R*Math.cos(t),rx=cx+R*Math.sin(t);
+  rayArrow(ctx,ix,iy,cx,my,C.r2,3);rayArrow(ctx,cx,my,rx,iy,C.r1,3);
+  const r=R*.42;
+  arc(ctx,cx,my,r,-Math.PI/2-t,-Math.PI/2,C.r2,2.5);
+  arc(ctx,cx,my,r,-Math.PI/2,-Math.PI/2+t,C.r1,2.5);
+  arc(ctx,cx,my,r*1.35,-Math.PI/2+t,0,C.bark,2);
+  if(th>6){txt(ctx,'θ',cx-r*.75*Math.sin(t/2+.1)-8,my-r*1.1,{s:16,w:700,c:C.r2,a:'center'});txt(ctx,"θ'",cx+r*.75*Math.sin(t/2)+10,my-r*1.1,{s:16,w:700,c:C.r1,a:'center'});}
+  if(th<80)txt(ctx,'X',cx+r*1.55*Math.cos(t/2+.0)*.9+6,my-8,{s:16,w:700,c:C.bark});
+  txt(ctx,'入射光',Math.max(8,ix-4),Math.max(18,iy-6),{s:13,c:C.r2});
+  txt(ctx,'反射光',Math.min(W-52,rx-10),Math.max(18,iy-6),{s:13,c:C.r1});
+}
+function drawPlane(ctx,W,H,d){
+  const mx=W/2,unit=(W*.5-36)/6.5,gy=H*.86,ph=H*.40;
+  ctx.fillStyle=C.card;ctx.fillRect(0,0,W,H);
+  ln(ctx,mx,H*.1,mx,gy+4,C.deep,5);for(let y=H*.1;y<gy;y+=12)ln(ctx,mx+3,y,mx+13,y+8,C.bark,1.5);
+  ln(ctx,6,gy,W-6,gy,C.sand,1.5);
+  const ox=mx-d*unit,imx=mx+d*unit;
+  ctx.save();ctx.font='700 '+ph+'px '+FONT;ctx.textAlign='center';ctx.fillStyle=C.ink;ctx.fillText('R',ox,gy);ctx.restore();
+  ctx.save();ctx.globalAlpha=.5;ctx.translate(imx,0);ctx.scale(-1,1);ctx.font='700 '+ph+'px '+FONT;ctx.textAlign='center';ctx.fillStyle=C.r1;ctx.fillText('R',0,gy);ctx.restore();
+  txt(ctx,'物',ox,gy+16,{a:'center',s:13,c:C.moss});txt(ctx,'像（虛像）',imx,gy+16,{a:'center',s:13,c:C.r1});
+  const y1=gy-ph-14;
+  ln(ctx,ox,y1,mx,y1,C.deep,1.5);txt(ctx,'d = '+d,(ox+mx)/2,y1-4,{a:'center',s:14,w:700});
+  ln(ctx,mx,y1,imx,y1,C.r1,1.5);txt(ctx,'d = '+d,(mx+imx)/2,y1-4,{a:'center',s:14,w:700,c:C.r1});
+  const y2=y1-22;ln(ctx,ox,y2,imx,y2,C.deep,2);ln(ctx,ox,y2-5,ox,y2+5,C.deep,2);ln(ctx,imx,y2-5,imx,y2+5,C.deep,2);
+  txt(ctx,'人與像相距 '+(2*d)+' m',mx,y2-6,{a:'center',s:15,w:700});
+}
+const MEDIA={air:{n:'空氣',n1:1.0,bg:'#F6EFE0',sp:3.00},water:{n:'水',n1:1.33,bg:'#CFE1E6',sp:2.26},glass:{n:'玻璃',n1:1.5,bg:'#D9E5D4',sp:2.00}};
+function refractCalc(a,b,th){const s=MEDIA[a].n1*Math.sin(th*Math.PI/180)/MEDIA[b].n1;return s>1?null:Math.asin(s)*180/Math.PI;}
+function drawRefract(ctx,W,H,a,b,th){
+  const cx=W/2,cy=H/2,R=H*.40,t=th*Math.PI/180,t2=refractCalc(a,b,th);
+  ctx.fillStyle=MEDIA[a].bg;ctx.fillRect(0,0,W,cy);ctx.fillStyle=MEDIA[b].bg;ctx.fillRect(0,cy,W,H-cy);
+  ln(ctx,0,cy,W,cy,C.deep,2.5);
+  ln(ctx,cx,6,cx,H-6,C.moss,1.6,[6,5]);txt(ctx,'法線',cx+6,18,{s:13,c:C.moss});
+  txt(ctx,MEDIA[a].n+'（光速 '+MEDIA[a].sp.toFixed(2)+'）',10,22,{s:14,c:C.deep});
+  txt(ctx,MEDIA[b].n+'（光速 '+MEDIA[b].sp.toFixed(2)+'）',10,H-12,{s:14,c:C.deep});
+  const ix=cx-R*Math.sin(t),iy=cy-R*Math.cos(t);
+  rayArrow(ctx,ix,iy,cx,cy,C.r2,3);
+  ln(ctx,cx,cy,cx+R*Math.sin(t)*.9,cy-R*Math.cos(t)*.9,'rgba(60,58,58,.25)',1.5,[4,4]);
+  if(t2==null){rayArrow(ctx,cx,cy,cx+R*Math.sin(t),cy-R*Math.cos(t),C.r1,3);
+    txt(ctx,'光出不去，全部反射回來（全反射，不用考）',cx,H-30,{a:'center',s:14,c:C.bad,w:700});}
+  else{const r2=t2*Math.PI/180;rayArrow(ctx,cx,cy,cx+R*Math.sin(r2),cy+R*Math.cos(r2),C.r1,3);
+    arc(ctx,cx,cy,R*.3,-Math.PI/2-t,-Math.PI/2,C.r2,2.5);arc(ctx,cx,cy,R*.34,Math.PI/2-r2,Math.PI/2,C.r1,2.5);
+    if(th>4){txt(ctx,'入射角 '+th+'°',cx-R*.34-6,cy-R*.36,{a:'right',s:14,c:C.r2,w:700});
+      txt(ctx,'折射角 '+n2(t2,1)+'°',cx+R*.34+6,cy+R*.5,{s:14,c:C.r1,w:700});}}
+}
+function lensCalc(type,u){
+  const F=type==='convex'?10:-10;
+  if(type==='convex'&&Math.abs(u-10)<1e-9)return {exists:false};
+  const v=u*F/(u-F),m=-v/u;
+  return {exists:true,v,m,real:v>0,upright:m>0,size:Math.abs(m)>1.0001?'放大':Math.abs(m)<.9999?'縮小':'等大'};
+}
+function zoneOf(u){return u>20?0:u===20?1:u>10?2:u===10?3:4;}
+const ZONES=[
+  {k:'u > 2F',t:'在 2F 以外',p:'倒立・縮小・實像'},
+  {k:'u = 2F',t:'剛好在 2F',p:'倒立・等大・實像'},
+  {k:'F < u < 2F',t:'F 與 2F 之間',p:'倒立・放大・實像'},
+  {k:'u = F',t:'剛好在 F',p:'不成像（光線平行射出）'},
+  {k:'u < F',t:'在 F 以內',p:'正立・放大・虛像'}];
+
+/* ---------- 透鏡實驗台（實驗室與闖關題共用） ---------- */
+function LensLab(root,opt){
+  const st={type:opt.type||'convex',u:opt.u||30,cover:false};
+  const wrap=h('div',{class:'cvwrap'});root.append(wrap);
+  const cb=mkCanvas(wrap,w=>Math.round(Math.min(360,Math.max(240,w*.55))));
+  const info=h('div',{class:'readout'});
+  let sl=null;
+  const api={getU:()=>st.u,getType:()=>st.type};
+  cb.draw=function(){
+    const {ctx,W,H}=cb;drawBg(cb);
+    const lx=W*.5,ay=H*.52,xs=(lx-12)/36,oh=H*.16,LH=H*.43,F=st.type==='convex'?10:-10;
+    ln(ctx,0,ay,W,ay,C.bark,1.4);
+    [-2,-1,1,2].forEach(k=>{const x=lx+k*10*xs;ln(ctx,x,ay-5,x,ay+5,C.deep,2);txt(ctx,Math.abs(k)===1?'F':'2F',x,ay+20,{a:'center',s:13,c:C.moss});});
+    const u=st.u,c=lensCalc(st.type,u),ox=lx-u*xs,tipY=ay-oh;
+    // 透鏡
+    ctx.save();ctx.beginPath();
+    if(st.type==='convex'){ctx.moveTo(lx,ay-LH);ctx.quadraticCurveTo(lx+16,ay,lx,ay+LH);ctx.quadraticCurveTo(lx-16,ay,lx,ay-LH);}
+    else{ctx.moveTo(lx-9,ay-LH);ctx.lineTo(lx+9,ay-LH);ctx.quadraticCurveTo(lx-3,ay,lx+9,ay+LH);ctx.lineTo(lx-9,ay+LH);ctx.quadraticCurveTo(lx+3,ay,lx-9,ay-LH);}
+    ctx.fillStyle='rgba(47,127,134,.2)';ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+    // 螢幕（實像）
+    const Ix=c.exists?lx+c.v*xs:0,Ih=c.exists?c.m*oh:0;
+    if(c.exists&&c.real&&Ix<W-4){ctx.fillStyle='#fff';ctx.fillRect(Ix-2,ay-LH*.85,4,LH*1.7);ctx.strokeStyle=C.bark;ctx.lineWidth=1.2;ctx.strokeRect(Ix-2,ay-LH*.85,4,LH*1.7);}
+    // 光線
+    const rays=[{hit:oh,col:C.r1},{hit:0,col:C.r2}];
+    if(!(st.type==='convex'&&u===10))rays.push({hit:oh*F/(F-u),col:C.r3});
+    ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
+    rays.forEach(r=>{
+      if(Math.abs(r.hit)>LH)return;
+      const py=ay-r.hit,blocked=st.cover&&r.hit>.5;
+      ln(ctx,ox,tipY,lx,py,r.col,2);
+      if(blocked){txt(ctx,'✕',lx-4,py+4,{s:14,c:C.deep,w:700,a:'center'});return;}
+      let dx,dy;
+      if(!c.exists){dx=lx-ox;dy=ay-tipY;}
+      else if(c.real){dx=Ix-lx;dy=(ay-Ih)-py;}
+      else{dx=lx-Ix;dy=py-(ay-Ih);}
+      const len=Math.hypot(dx,dy);dx/=len;dy/=len;
+      const tt=(W-lx)/dx;
+      ln(ctx,lx,py,lx+dx*tt,py+dy*tt,r.col,2);
+      if(c.exists&&!c.real)ln(ctx,lx,py,Ix,ay-Ih,r.col,1.6,[5,5]);
+    });
+    ctx.restore();
+    if(st.cover){ctx.fillStyle='rgba(43,42,41,.88)';ctx.fillRect(lx-7,ay-LH-2,14,LH+2);}
+    // 物
+    vArrow(ctx,ox,ay,tipY,C.ink,4);ctx.beginPath();ctx.fillStyle='#E3A33B';ctx.arc(ox,tipY-6,5,0,7);ctx.fill();
+    txt(ctx,'物',ox,ay+36,{a:'center',s:13,c:C.moss});
+    // 像
+    if(c.exists){
+      ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.globalAlpha=st.cover?.45:1;
+      const col='#84487A';
+      vArrow(ctx,Ix,ay,ay-Ih,col,4.5,c.real?null:[6,5]);ctx.restore();
+      if(Ix>W-8)txt(ctx,'像在更遠的右邊 →',W-8,H-8,{a:'right',s:13,c:'#84487A'});
+      if(Ix<8)txt(ctx,'← 虛像在更遠的左邊',8,H-8,{s:13,c:'#84487A'});
+      if(Ix>=8&&Ix<=W-8){const left=Ix+45>W;txt(ctx,c.real?'實像':'虛像',left?Ix-9:Ix+9,Ih<0?ay-8:ay+36,{a:left?'right':'left',s:13,c:'#84487A'});}
+    }else txt(ctx,'光線平行射出，找不到交會點，沒有像',W/2,H-10,{a:'center',s:14,c:C.bad,w:700});
+  };
+  function readout(){
+    const c=lensCalc(st.type,st.u);
+    if(opt.readout==='none'){info.remove();return;}
+    if(opt.readout==='mag'){
+      info.innerHTML=c.exists?`<div class="big">像是物的 <b>${n2(Math.abs(c.m),1)}</b> 倍大</div>`:`<div class="big"><b>沒有像</b></div>`;return;}
+    const zone=st.type==='convex'?ZONES[zoneOf(st.u)].t:'';
+    let desc;
+    if(!c.exists)desc='<b>不成像</b>（光線平行射出）';
+    else desc=`<b>${c.upright?'正立':'倒立'}・${c.size}・${c.real?'實像':'虛像'}</b>`;
+    info.innerHTML=`<div class="big">物距 u = <b>${st.u}</b> cm${zone?'（'+zone+'）':''}</div><div class="big">像：${desc}</div>`;
+  }
+  const ctlbox=h('div',{class:'ctls'});
+  function update(){cb.draw();readout();opt.onChange&&opt.onChange(st);}
+  sl=slider({label:'蠟燭離透鏡的距離（物距 u）',min:opt.umin||3,max:opt.umax||35,step:.5,val:st.u,unit:' cm',onInput:v=>{st.u=v;update();}});
+  ctlbox.append(sl.el);
+  if(opt.typeSwitch){
+    const sg=seg([['convex','凸透鏡'],['concave','凹透鏡']],st.type,k=>{st.type=k;update();});
+    ctlbox.prepend(sg.el);
+  }
+  if(opt.coverBtn){
+    const b=h('button',{type:'button',class:'segbtn','aria-pressed':'false',onclick:()=>{st.cover=!st.cover;b.setAttribute('aria-pressed',String(st.cover));b.textContent=st.cover?'拿開黑紙':'用黑紙遮住上半部透鏡';update();}},'用黑紙遮住上半部透鏡');
+    ctlbox.append(b);
+  }
+  root.append(ctlbox);
+  if(opt.readout!=='none')root.append(info);
+  readout();
+  api.destroy=()=>cb.destroy();
+  api.state=st;
+  return api;
+}
+
+/* =========================================================
+   各關實驗室
+   ========================================================= */
+function labWave(root){
+  let f=1,A=30,t=0,playing=!reduced;
+  const wrap=h('div',{class:'cvwrap'});root.append(wrap);
+  const cb=mkCanvas(wrap,w=>Math.round(Math.max(200,w*.46)));
+  const R=h('div',{class:'readout'});
+  cb.draw=function(){
+    const {ctx,W,H}=cb;drawBg(cb);
+    const cy=H*.52,vpx=W*.26,lam=vpx/f,k=2*Math.PI/lam,w=2*Math.PI*f,amp=A/60*H*.36;
+    ln(ctx,0,cy,W,cy,C.sand,1.5,[5,5]);
+    ctx.save();ctx.beginPath();ctx.lineWidth=3.5;ctx.strokeStyle=C.r2;ctx.lineJoin='round';
+    for(let x=0;x<=W;x+=2){const y=cy-amp*Math.sin(k*x-w*t);x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();ctx.restore();
+    const lx=W*.62,ly=cy-amp*Math.sin(k*lx-w*t);
+    ln(ctx,lx,8,lx,H-8,C.clay,1.4,[4,4]);
+    ctx.beginPath();ctx.fillStyle=C.r1;ctx.strokeStyle=C.deep;ctx.lineWidth=2;ctx.arc(lx,ly,9,0,7);ctx.fill();ctx.stroke();
+    txt(ctx,'葉子',lx+14,ly-10,{s:14,c:C.r1,w:700});
+    txt(ctx,'波往右傳 →',W-10,18,{a:'right',s:14,c:C.moss});
+  };
+  function read(){R.innerHTML=`<div class="big">頻率 f = <b>${f}</b> Hz　週期 T = 1 ÷ ${f} = <b>${n2(1/f,3)}</b> 秒</div><div class="sm">f：每秒振動幾次　T：振動一次要幾秒</div>`;}
+  const s1=slider({label:'頻率 f（手每秒甩幾次）',min:.5,max:4,step:.5,val:f,unit:' Hz',onInput:v=>{f=v;read();cb.draw();}});
+  const s2=slider({label:'振幅（甩得多用力）',min:10,max:60,step:5,val:A,onInput:v=>{A=v;cb.draw();}});
+  const pb=h('button',{type:'button',class:'segbtn',onclick:()=>{playing=!playing;pb.textContent=playing?'暫停':'播放';}},playing?'暫停':'播放');
+  root.append(h('div',{class:'ctls'},s1.el,s2.el,h('div',{class:'seg'},pb)),R);read();
+  const stop=loop(dt=>{if(playing){t+=dt;cb.draw();}});
+  return {destroy(){stop();cb.destroy();}};
+}
+
+function labVFL(root){
+  return tabbed(root,[
+   {label:'自己調 f 和 λ',build(p){
+      let f=2,lam=3,ph=0,playing=!reduced;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(190,w*.4)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){const {ctx,W,H}=cb;drawBg(cb);const lamPx=lam*W/14;drawWaveSnap(ctx,W,H,lamPx,H*.26,ph,C.r3,true);txt(ctx,'慢動作播放',W-8,16,{a:'right',s:13,c:C.moss});};
+      const read=()=>{R.innerHTML=`<div class="big">v = f × λ = <b>${f}</b> × <b>${lam}</b> = <b>${n2(f*lam)}</b> m/s</div><div class="sm">頻率 f（Hz）、波長 λ（m）、波速 v（m/s）</div>`;};
+      const s1=slider({label:'頻率 f',min:1,max:8,step:1,val:f,unit:' Hz',onInput:v=>{f=v;read();}});
+      const s2=slider({label:'波長 λ',min:1,max:6,step:.5,val:lam,unit:' m',onInput:v=>{lam=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el,s2.el),R);read();
+      const stop=loop(dt=>{if(playing){ph+=2*Math.PI*f*.22*dt;cb.draw();}});
+      return {destroy(){stop();cb.destroy();}};
+   }},
+   {label:'換介質看看',build(p){
+      let med='air',f=200;const V={air:340,water:1500};
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(190,w*.4)));
+      const R=h('div',{class:'readout'});let ph=0;let playing=!reduced;
+      cb.draw=function(){const {ctx,W,H}=cb;drawBg(cb);const lam=V[med]/f;drawWaveSnap(ctx,W,H,lam*W/20,H*.26,ph,med==='air'?C.r2:'#2F6FA1',true);txt(ctx,'這張圖的寬度 ＝ 20 公尺',8,H-8,{s:13,c:C.moss});};
+      const read=()=>{const lam=V[med]/f;R.innerHTML=`<div class="big">λ = v ÷ f = ${V[med]} ÷ ${f} = <b>${n2(lam,2)}</b> m</div><div class="sm">聲源決定頻率 f；介質決定波速 v；所以 λ 跟著變。</div>`;};
+      const sg=seg([['air','空氣  v = 340 m/s'],['water','水  v = 1500 m/s']],med,k=>{med=k;read();cb.draw();});
+      const s1=slider({label:'聲源頻率 f',min:100,max:500,step:50,val:f,unit:' Hz',onInput:v=>{f=v;read();cb.draw();}});
+      p.append(sg.el,h('div',{class:'ctls'},s1.el),R);read();
+      const stop=loop(dt=>{if(playing){ph+=2*Math.PI*.4*dt;cb.draw();}});
+      return {destroy(){stop();cb.destroy();}};
+   }}]);
+}
+
+function labSound(root){
+  return tabbed(root,[
+   {label:'音調・響度・音色',build(p){
+      let f=300,a=.6,wv='sine',on=false,ac=null,osc=null,gn=null;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(170,w*.36)));
+      const R=h('div',{class:'readout'});
+      const S={sine:p=>Math.sin(p),square:p=>Math.sin(p)>=0?1:-1,tri:p=>2/Math.PI*Math.asin(Math.sin(p))};
+      cb.draw=function(){const {ctx,W,H}=cb;drawBg(cb);const cy=H/2;ln(ctx,0,cy,W,cy,C.sand,1.4,[5,5]);
+        ctx.save();ctx.beginPath();ctx.lineWidth=3.5;ctx.strokeStyle=C.r1;ctx.lineJoin='round';
+        for(let x=0;x<=W;x+=2){const tm=x/W*0.012,y=cy-S[wv](2*Math.PI*f*tm)*a*H*.4;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.restore();
+        txt(ctx,'麥克風看到的聲波（0.012 秒）',8,16,{s:13,c:C.moss});};
+      const read=()=>{
+        const pitch=f<250?'偏低':f<600?'中等':'偏高';const loud=a<.35?'小聲':a<.75?'中等':'大聲';
+        const wn={sine:'圓滑',square:'方方的',tri:'三角形'}[wv];
+        R.innerHTML=`<div class="big">音調 <b>${pitch}</b>（頻率 ${f} Hz）</div><div class="big">響度 <b>${loud}</b>（振幅 ${Math.round(a*100)}）</div><div class="big">音色：波形 <b>${wn}</b></div>`;};
+      const upd=()=>{read();cb.draw();if(on&&osc){try{osc.frequency.setValueAtTime(f,ac.currentTime);gn.gain.setValueAtTime(a*.12,ac.currentTime);}catch(e){}}};
+      const s1=slider({label:'頻率 f',min:100,max:1000,step:10,val:f,unit:' Hz',onInput:v=>{f=v;upd();}});
+      const s2=slider({label:'振幅',min:.1,max:1,step:.1,val:a,fmt:v=>Math.round(v*100),onInput:v=>{a=v;upd();}});
+      const sg=seg([['sine','圓滑波形'],['square','方形波形'],['tri','三角波形']],wv,k=>{wv=k;if(osc)try{osc.type=k==='tri'?'triangle':k;}catch(e){}upd();});
+      const msg=h('div',{class:'sm',style:'margin-top:6px;color:#5E5B4C;font-size:14px'});
+      const pb=h('button',{type:'button',class:'btn acc',onclick:()=>{
+        if(on){stopTone();return;}
+        try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume();
+          osc=ac.createOscillator();gn=ac.createGain();osc.type=wv==='tri'?'triangle':wv;osc.frequency.value=f;gn.gain.value=a*.12;
+          osc.connect(gn);gn.connect(ac.destination);osc.start();on=true;pb.textContent='停止聲音';msg.textContent='請把裝置音量調小一點再聽。';
+        }catch(e){msg.textContent='這台裝置無法播放聲音，但你仍然可以用波形觀察。';}
+      }},'播放聲音');
+      function stopTone(){try{osc&&osc.stop();}catch(e){}osc=null;on=false;pb.textContent='播放聲音';}
+      p.append(h('div',{class:'ctls'},s1.el,s2.el),sg.el,h('div',{class:'actions'},pb),msg,R);read();
+      return {destroy(){stopTone();try{ac&&ac.close();}catch(e){}cb.destroy();}};
+   }},
+   {label:'聲速與回聲',build(p){
+      let T=15,d=10;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(190,w*.4)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){const {ctx,W,H}=cb;drawBg(cb);
+        const v=331+.6*T,t=2*d/v,gy=H*.46,px=W*.1,wx=px+(d/40)*(W*.78);
+        ln(ctx,8,gy+22,W-8,gy+22,C.sand,1.5);
+        ctx.beginPath();ctx.fillStyle=C.ink;ctx.arc(px,gy,12,0,7);ctx.fill();txt(ctx,'你',px,gy+42,{a:'center',s:13,c:C.moss});
+        ctx.fillStyle=C.deep;ctx.fillRect(wx,gy-36,10,70);for(let y=gy-34;y<gy+34;y+=10)ln(ctx,wx+10,y,wx+18,y+8,C.bark,1.4);txt(ctx,'牆',wx+4,gy+52,{a:'center',s:13,c:C.moss});
+        rayArrow(ctx,px+16,gy-6,wx-4,gy-6,C.r1,2.5);rayArrow(ctx,wx-4,gy+8,px+16,gy+8,C.r2,2.5,[6,4]);
+        txt(ctx,'d = '+d+' m',(px+wx)/2,gy-16,{a:'center',s:14,w:700});
+        // 時間條
+        const bx=14,bw=W-28,by=H*.8,mx=.3;
+        ctx.fillStyle='#fff';ctx.fillRect(bx,by,bw,14);ctx.strokeStyle=C.ink;ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,14);
+        ctx.fillStyle=t>=.1?C.ok:C.bad;ctx.fillRect(bx,by,Math.min(1,t/mx)*bw,14);
+        const tx=bx+.1/mx*bw;ln(ctx,tx,by-8,tx,by+22,C.deep,2);txt(ctx,'0.1 秒',tx,by+38,{a:'center',s:13,w:700});
+        txt(ctx,'來回時間 '+n2(t,3)+' 秒',bx,by-12,{s:14});
+      };
+      const read=()=>{const v=331+.6*T,t=2*d/v;R.innerHTML=`<div class="big">聲速 v = 331 + 0.6 × ${T} = <b>${n2(v,1)}</b> m/s</div><div class="big">t = 2 × ${d} ÷ ${n2(v,1)} = <b>${n2(t,3)}</b> 秒　<span class="chip ${t>=.1?'good':'bad'}">${t>=.1?'聽得出回聲':'和原聲混在一起'}</span></div>`;};
+      const s1=slider({label:'氣溫 T',min:0,max:40,step:5,val:T,unit:' °C',onInput:v=>{T=v;read();cb.draw();}});
+      const s2=slider({label:'牆壁距離 d',min:1,max:40,step:1,val:d,unit:' m',onInput:v=>{d=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el,s2.el),R);read();
+      return {destroy(){cb.destroy();}};
+   }}]);
+}
+
+function labLight(root){
+  return tabbed(root,[
+   {label:'針孔成像',build(p){
+      let u=6,s=3;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(190,w*.42)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){drawPinhole(cb.ctx,cb.W,cb.H,u,s);};
+      const read=()=>{R.innerHTML=`<div class="big">像高 ÷ 物高 = s ÷ u = ${s} ÷ ${u} = <b>${n2(s/u)}</b> 倍</div><div class="sm">像是上下顛倒的，因為光沿直線穿過小孔。</div>`;};
+      const s1=slider({label:'蠟燭到小孔 u',min:2,max:10,step:1,val:u,unit:' cm',onInput:v=>{u=v;read();cb.draw();}});
+      const s2=slider({label:'小孔到紙屏 s',min:2,max:10,step:1,val:s,unit:' cm',onInput:v=>{s=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el,s2.el),R);read();
+      return {destroy(){cb.destroy();}};
+   }},
+   {label:'路燈下的影子',build(p){
+      let d=2;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(190,w*.45)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){const {ctx,W,H}=cb;drawBg(cb);
+        const ps=W*.075,gy=H*.88,lampX=W*.08,Hm=4,hm=1.6,lampTop=gy-Hm*ps,px=lampX+d*ps,head=gy-hm*ps;
+        const L=hm*d/(Hm-hm),endX=px+L*ps;
+        ln(ctx,6,gy,W-6,gy,C.bark,2);
+        ln(ctx,lampX,gy,lampX,lampTop,C.deep,5);ctx.beginPath();ctx.fillStyle='#E3A33B';ctx.arc(lampX+2,lampTop,9,0,7);ctx.fill();
+        ln(ctx,lampX+2,lampTop,endX,gy,C.r3,2);
+        ln(ctx,px,gy,endX,gy,C.deep,8);
+        vArrow(ctx,px,gy,head,C.r2,7);ctx.beginPath();ctx.fillStyle=C.r2;ctx.arc(px,head-6,6,0,7);ctx.fill();
+        txt(ctx,'影子 '+n2(L,1)+' m',(px+endX)/2,gy+Math.min(16,H*.1),{a:'center',s:14,w:700});
+      };
+      const read=()=>{R.innerHTML=`<div class="big">離路燈 <b>${d}</b> m　影長 ≈ <b>${n2(1.6*d/2.4,1)}</b> m</div><div class="sm">人離光源愈遠，擋住的光線愈斜，影子就愈長。</div>`;};
+      const s1=slider({label:'人離路燈的距離',min:1,max:7,step:.5,val:d,unit:' m',onInput:v=>{d=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el),R);read();
+      return {destroy(){cb.destroy();}};
+   }}]);
+}
+
+function labReflect(root){
+  return tabbed(root,[
+   {label:'反射定律',build(p){
+      let th=30;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(210,w*.5)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){drawReflect(cb.ctx,cb.W,cb.H,th);};
+      const read=()=>{R.innerHTML=`<div class="big">入射角 θ = <b>${th}°</b>　反射角 θ' = <b>${th}°</b></div><div class="big">反射光與鏡面的夾角 X = <b>${90-th}°</b></div><div class="sm">角度都是從「法線」量起；法線和鏡面互相垂直（90°）。</div>`;};
+      const s1=slider({label:'入射角 θ',min:0,max:80,step:5,val:th,unit:'°',onInput:v=>{th=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el),R);read();
+      return {destroy(){cb.destroy();}};
+   }},
+   {label:'平面鏡成像',build(p){
+      let d=2;
+      const wrap=h('div',{class:'cvwrap'});p.append(wrap);
+      const cb=mkCanvas(wrap,w=>Math.round(Math.max(200,w*.48)));
+      const R=h('div',{class:'readout'});
+      cb.draw=function(){drawPlane(cb.ctx,cb.W,cb.H,d);};
+      const read=()=>{R.innerHTML=`<div class="big">物距 d = <b>${d}</b> m　像距 = <b>${d}</b> m</div><div class="big">人與像相距 <b>${2*d}</b> m</div><div class="sm">平面鏡的像：正立、虛像、左右相反、大小相同。</div>`;};
+      const s1=slider({label:'你離鏡子的距離 d',min:1,max:6,step:.5,val:d,unit:' m',onInput:v=>{d=v;read();cb.draw();}});
+      p.append(h('div',{class:'ctls'},s1.el),R);read();
+      return {destroy(){cb.destroy();}};
+   }}]);
+}
+
+function labRefract(root){
+  let a='air',b='water',th=40;
+  const wrap=h('div',{class:'cvwrap'});root.append(wrap);
+  const cb=mkCanvas(wrap,w=>Math.round(Math.max(230,w*.56)));
+  const R=h('div',{class:'readout'});
+  cb.draw=function(){drawRefract(cb.ctx,cb.W,cb.H,a,b,th);};
+  const read=()=>{const t2=refractCalc(a,b,th);let m='';
+    if(th===0)m='垂直射入，不偏折。';else if(t2==null)m='角度太斜，光出不去了。';
+    else if(MEDIA[a].n1<MEDIA[b].n1)m='快 → 慢：折射角 < 入射角，偏向法線。';
+    else if(MEDIA[a].n1>MEDIA[b].n1)m='慢 → 快：折射角 > 入射角，偏離法線。';else m='同一種介質，光不偏折。';
+    R.innerHTML=`<div class="big">入射角 <b>${th}°</b> → 折射角 <b>${t2==null?'—':n2(t2,1)+'°'}</b></div><div class="sm">${m}</div>`;};
+  const mk=(label,get,set)=>{const sg=seg([['air','空氣'],['water','水'],['glass','玻璃']],get(),k=>{set(k);read();cb.draw();});return h('div',null,h('div',{class:'sm',style:'font-size:14px;color:#5E5B4C'},label),sg.el);};
+  const s1=slider({label:'入射角',min:0,max:80,step:5,val:th,unit:'°',onInput:v=>{th=v;read();cb.draw();}});
+  root.append(mk('光從上面的介質：',()=>a,k=>a=k),mk('射進下面的介質：',()=>b,k=>b=k),h('div',{class:'ctls'},s1.el),R);read();
+  return {destroy(){cb.destroy();}};
+}
+
+function labLens(root,ctx){
+  const got=new Set();
+  const stampBox=h('div',{class:'stamps'});
+  const names=ZONES.map((z,i)=>{const e=h('div',{class:'stamp'},h('b',null,z.t),h('span',null,'？？？'));stampBox.append(e);return e;});
+  let lab=null;
+  const onChange=st=>{
+    if(st.type!=='convex')return;
+    const z=zoneOf(st.u);
+    if(!got.has(z)){got.add(z);names[z].classList.add('got');names[z].lastChild.textContent=ZONES[z].p;ctx.setGate(got.size,5);}
+  };
+  lab=LensLab(root,{type:'convex',u:30,typeSwitch:true,coverBtn:true,onChange});
+  root.append(h('div',{class:'sm',style:'margin-top:14px;font-size:15px'},'集章表：把物體移到五種位置，各看一次，答案就會蓋在章上。'),stampBox);
+  onChange(lab.state);
+  return {destroy(){lab.destroy();}};
+}
+
+/* =========================================================
+   關卡資料
+   ========================================================= */
+const ICON={
+  wave:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M2 16c3-9 6-9 9 0s6 9 9 0 6-9 9 0"/></svg>',
+  fx:'<svg viewBox="0 0 32 32" fill="currentColor"><text x="16" y="21" text-anchor="middle" font-size="15" font-weight="700" font-family="serif">fλ</text></svg>',
+  sound:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h5l7-5v18l-7-5H4z"/><path d="M21 11c2 3 2 7 0 10M25 8c4 5 4 11 0 16"/></svg>',
+  pin:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 3v10M16 19v10M3 8l13 8 13 8M3 24l13-8"/></svg>',
+  mirror:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 25h26M5 5l11 20 11-20"/></svg>',
+  refr:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 16h26M6 4l10 12 4 12"/></svg>',
+  lens:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 3c-8 7-8 19 0 26 8-7 8-19 0-26zM2 16h28"/></svg>'
+};
+function seal(color,label,size){
+  return `<svg viewBox="0 0 100 100" width="${size||100}" height="${size||100}"><circle cx="50" cy="50" r="45" fill="none" stroke="${color}" stroke-width="4"/><circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="1.6" stroke-dasharray="3 4"/><text x="50" y="47" text-anchor="middle" font-size="26" font-weight="700" fill="${color}" font-family="${FONT}">${label}</text><text x="50" y="68" text-anchor="middle" font-size="13" fill="${color}" font-family="${FONT}">通過</text></svg>`;
+}
+
+const STAGES=[
+{ id:'wave',acc:'#2F7F86',icon:'wave',title:'波，傳的是什麼？',formula:'T = 1 ÷ f',
+  mission:'拖動頻率和振幅，盯著紅色小葉子：它會跟著波一起往右跑嗎？頻率變大時，週期怎麼變？',
+  tables:[{"t": "三個名詞", "h": ["名稱", "符號", "單位", "意思"], "r": [["週期", "T", "秒", "振動一次的時間"], ["頻率", "f", "Hz", "每秒振動幾次"], ["振幅", "A", "—", "愈大，能量愈大"]]}, {"t": "T 和 f", "h": ["T = 1 ÷ f", "f = 1 ÷ T"], "r": [["f 變大", "T 變小"]]}, {"t": "改變什麼", "h": ["動作", "結果"], "r": [["手甩更快", "f 變大"], ["手甩更用力", "振幅變大"], ["換介質", "波速改變"], ["改變甩法", "波速不變"]]}],
+  lab:labWave,
+  qs:[
+   {t:'choice',q:'硬幣掉進水池，水波一圈一圈向外傳開。池面上的落葉會怎麼動？',opts:['跟著水波一路漂向池邊','在原處附近上下晃動','慢慢漂向硬幣掉下的地方','完全不動，連上下都不動'],ans:1,hint:'回到實驗室，看紅色小葉子的水平位置有沒有改變。',why:'波傳出去的是能量，水（介質）只在原處上下振動，不會跟著波跑。'},
+   {t:'slider',q:'振動一個完整來回所花的時間叫週期 T。拖動頻率，讓週期剛好是 0.25 秒。',controls:[{id:'f',label:'頻率 f',min:.5,max:8,step:.5,val:1,unit:' Hz'}],
+    readout:v=>`f = ${v.f} Hz　→　T = 1 ÷ ${v.f} = <b>${n2(1/v.f,3)}</b> 秒`,check:v=>v.f===4,hint:'T = 1 ÷ f。要讓 T 是 0.25，f 要是多少才會 1 ÷ f = 0.25？',why:'T = 1 ÷ f，反過來 f = 1 ÷ T = 1 ÷ 0.25 = 4 Hz。'},
+   {t:'choice',q:'戰繩訓練時，想在相同時間內甩出「更多個波」，手應該怎麼做？',opts:['甩得更快，頻率變大','甩得更慢，頻率變小','把繩子放得更鬆','只加大幅度，速度不變'],ans:0,hint:'「更多個波」代表每秒振動的次數變多。',why:'單位時間內的波數就是頻率。手甩得愈快，頻率愈大。'},
+   {t:'choice',q:'同一條戰繩，想讓波「更快跑到牆壁」，改變手的甩法有用嗎？',opts:['有用，甩得愈快波跑得愈快','有用，甩得愈用力波跑得愈快','沒用，波速由繩子這個介質決定','有用，甩得愈慢波跑得愈快'],ans:2,hint:'實驗室裡，頻率變大時，波前進的速度有變嗎？',why:'波速由介質決定。手甩得快只會讓波變得更密（波長變短），波前進的速度不變。'}
+  ]},
+{ id:'vfl',acc:'#A8741F',icon:'fx',title:'波速公式 v = f × λ',formula:'v = f × λ',
+  mission:'先在「自己調」把 f 加倍、λ 不變，看 v 怎麼變；再把 f 加倍、λ 減半，看 v。接著去「換介質」：頻率不變，換成水中會怎樣？',
+  tables:[{"t": "公式 v = f × λ", "h": ["符號", "名稱", "單位"], "r": [["v", "波速", "m/s"], ["f", "頻率", "Hz"], ["λ", "波長", "m"]]}, {"t": "換介質時", "h": ["量", "變不變"], "r": [["頻率 f", "不變"], ["波速 v", "改變"], ["波長 λ", "改變"]]}, {"t": "同一介質", "h": ["f 變大", "λ 變小", "v 不變"], "r": [["×2", "÷2", "不變"]]}],
+  lab:labVFL,
+  qs:[
+   {t:'slider',q:'目標：波速 v = 12 m/s，而且頻率 f = 4 Hz。調出需要的波長 λ。',controls:[{id:'f',label:'頻率 f',min:1,max:8,step:1,val:2,unit:' Hz'},{id:'lam',label:'波長 λ',min:.5,max:6,step:.5,val:1,unit:' m'}],
+    readout:v=>`v = f × λ = ${v.f} × ${v.lam} = <b>${n2(v.f*v.lam)}</b> m/s`,viz:(ctx,W,H,v)=>drawWaveSnap(ctx,W,H,v.lam*W/14,H*.26,.6,C.r3,true),
+    check:v=>v.f===4&&n2(v.f*v.lam)===12,hint:'把 v 和 f 代進 v = f × λ：12 = 4 × λ。',why:'12 = 4 × λ，所以 λ = 12 ÷ 4 = 3 m。'},
+   {t:'slider',q:'聲音在空氣中的速度約 340 m/s。想讓聲波的波長剛好是 1 m，聲源的頻率要調到幾 Hz？',controls:[{id:'f',label:'頻率 f',min:100,max:800,step:10,val:200,unit:' Hz'}],
+    readout:v=>`λ = v ÷ f = 340 ÷ ${v.f} = <b>${n2(340/v.f,2)}</b> m`,viz:(ctx,W,H,v)=>drawWaveSnap(ctx,W,H,(340/v.f)*W/14,H*.26,.6,C.r2,true),
+    check:v=>v.f===340,hint:'v = f × λ，所以 f = v ÷ λ。',why:'f = 340 ÷ 1 = 340 Hz。波長剛好 1 m，頻率在數字上就等於波速。'},
+   {t:'choice',q:'承上題，340 Hz 的聲音。大象（聽得見 16～12000 Hz）和兔子（聽得見 360～42000 Hz），誰聽得到？',opts:['只有大象聽得到','只有兔子聽得到','兩種都聽得到','兩種都聽不到'],ans:0,hint:'把 340 放進兩個範圍裡比一比。',why:'340 在 16～12000 之內，但沒到 360，所以只有大象聽得到。'},
+   {t:'choice',q:'1000 Hz 的聲音在空氣中波長 0.35 m。它進入水中（水中聲速是空氣的 5 倍），週期是多少？',opts:['0.001 秒','0.005 秒','200 秒','1000 秒'],ans:0,hint:'換介質時，頻率由聲源決定，會變嗎？再用 T = 1 ÷ f。',why:'頻率不變，仍是 1000 Hz，T = 1 ÷ 1000 = 0.001 秒。變的是波速和波長（波長變成 5 倍）。'}
+  ]},
+{ id:'sound',acc:'#A8473A',icon:'sound',title:'聲音的三要素與回聲',formula:'v = 331 + 0.6T',
+  mission:'在「音調・響度・音色」試著各拉一個滑桿，看波形怎麼變。再到「聲速與回聲」，找出牆壁最近要多遠才聽得到回聲。',
+  tables:[{"t": "三要素", "h": ["要素", "對應", "單位"], "r": [["音調", "頻率", "Hz"], ["響度", "振幅", "dB"], ["音色", "波形", "—"]]}, {"t": "聲速", "h": ["介質", "快慢"], "r": [["固體", "最快"], ["液體", "中等"], ["氣體", "最慢"], ["真空", "不能傳聲"]]}, {"t": "兩個公式", "h": ["名稱", "公式"], "r": [["聲速", "v = 331 + 0.6T"], ["回聲時間", "t = 2d ÷ v"], ["分辨回聲", "t ≥ 0.1 秒"]]}],
+  lab:labSound,
+  qs:[
+   {t:'choice',q:'吉他有一根弦走音，聽起來比標準音「還要高」。應該怎麼調整？',opts:['把弦調鬆一點','把弦調緊一點','換成更細的弦','把弦剪短一些'],ans:0,hint:'音調太高就是頻率太高。弦愈緊、愈細、愈短，頻率愈高。',why:'要降低頻率，就要把弦放鬆。調緊、換細、剪短都會讓音調更高。'},
+   {t:'choice',q:'下列哪一個因素「會」改變聲音在空氣中的傳播速度？',opts:['說話說得更急','聲音更大聲','空氣溫度升高','聲音頻率變高'],ans:2,hint:'想想聲速公式 v = 331 + 0.6T 裡有哪些量。',why:'v = 331 + 0.6T，溫度愈高聲速愈快。聲速和音量、頻率、說話快慢都無關。'},
+   {t:'slider',q:'氣溫 15 °C 時聲速是 340 m/s。拖動牆壁的距離，找出「剛好能分辨出回聲」的最短距離（原聲與回聲至少相隔 0.1 秒）。',controls:[{id:'d',label:'牆壁距離 d',min:5,max:30,step:1,val:8,unit:' m'}],
+    readout:v=>{const t=2*v.d/340;return `t = 2 × ${v.d} ÷ 340 = <b>${n2(t,3)}</b> 秒　<span class="chip ${t>=.1-1e-9?'good':'bad'}">${t>=.1-1e-9?'聽得出回聲':'混在一起'}</span>`;},
+    check:v=>v.d===17,hint:'聲音要「來回」走 2d，時間 = 2d ÷ 340，至少要 0.1 秒。',why:'2d ÷ 340 = 0.1，d = 17 m。再近一點，回聲就和原聲混在一起了。'},
+   {t:'choice',q:'鐵管長 1725 m，一端敲一下，另一端先聽到鐵管傳來的聲音，再聽到空氣傳來的，兩次相隔 4.4 秒（空氣聲速 345 m/s）。鐵管中的聲速是？',opts:['345 m/s','1725 m/s','2875 m/s','3450 m/s'],ans:2,hint:'先算空氣傳 1725 m 要幾秒；鐵管比它快了 4.4 秒，所以鐵管花了幾秒？',why:'空氣：1725 ÷ 345 = 5 秒。鐵管：5 − 4.4 = 0.6 秒。鐵管聲速 = 1725 ÷ 0.6 = 2875 m/s。'}
+  ]},
+{ id:'straight',acc:'#5C7F3F',icon:'pin',title:'光走直線：針孔與影子',formula:'像高 : 物高 = s : u',
+  mission:'在「針孔成像」把兩個滑桿都拉拉看，注意像的大小與方向。再到「影子」，讓人慢慢走離路燈。',
+  tables:[{"t": "針孔成像", "h": ["項目", "結果"], "r": [["像", "倒立・實像"], ["像高 : 物高", "s : u"], ["u 變大", "像變小"], ["s 變大", "像變大"], ["u = s", "等大"]]}, {"t": "影子", "h": ["人離光源", "影子"], "r": [["愈遠", "愈長"], ["愈近", "愈短"]]}],
+  lab:labLight,
+  qs:[
+   {t:'choice',q:'針孔成像時，紙屏上看到的像是什麼樣子？',opts:['倒立的實像','正立的實像','倒立的虛像','正立的虛像'],ans:0,hint:'光沿直線穿過小孔，上面的光會跑到下面去。',why:'光直進通過小孔，上下顛倒；像能投在紙屏上，所以是實像。'},
+   {t:'slider',q:'拖動 u（蠟燭到小孔）和 s（小孔到紙屏），讓紙屏上的像剛好和蠟燭一樣大。',controls:[{id:'u',label:'u 蠟燭到小孔',min:2,max:10,step:1,val:6,unit:' cm'},{id:'s',label:'s 小孔到紙屏',min:2,max:10,step:1,val:3,unit:' cm'}],
+    readout:v=>`像是物的 s ÷ u = ${v.s} ÷ ${v.u} = <b>${n2(v.s/v.u)}</b> 倍`,viz:(ctx,W,H,v)=>drawPinhole(ctx,W,H,v.u,v.s),
+    check:v=>v.u===v.s,hint:'像高 : 物高 = s : u。要一樣大，這個比要等於 1。',why:'s ÷ u = 1，也就是 s = u：小孔到兩邊的距離一樣時，像和物一樣大。'},
+   {t:'choice',q:'燭火向左移，離小孔更遠；小孔和紙屏都不動。紙屏上的像會怎麼變？',opts:['變小','變大','大小不變','變成正立'],ans:0,hint:'像是物的 s ÷ u 倍，u 變大時這個比值怎麼變？',why:'u 變大，s ÷ u 變小，像就變小了。像仍然是倒立的。'},
+   {t:'choice',q:'馬力歐從路燈下往右跑回家，離路燈愈來愈遠，他的影子會怎麼變？',opts:['愈來愈長','愈來愈短','長度不變','先變長再變短'],ans:0,hint:'到實驗室「路燈下的影子」，把人的距離拉遠看看。',why:'離光源愈遠，擋住的光線愈斜，影子愈長。'}
+  ]},
+{ id:'reflect',acc:'#5A5F9A',icon:'mirror',title:'反射與面鏡',formula:'入射角 = 反射角',
+  mission:'在「反射定律」拖動入射角，注意夾角 X 怎麼變。再到「平面鏡成像」，看自己離鏡子遠近時，像在哪裡。',
+  tables:[{"t": "反射定律", "h": ["項目", "結果"], "r": [["入射角 θ", "= 反射角 θ'"], ["角度從哪量", "法線"], ["X（與鏡面夾角）", "90° − θ"]]}, {"t": "平面鏡的像", "h": ["正立／倒立", "大小", "實／虛", "左右", "距離"], "r": [["正立", "等大", "虛像", "相反", "像距 = 物距"]]}, {"t": "面鏡", "h": ["種類", "作用", "例子"], "r": [["凹面鏡", "聚光", "探照燈、車燈、額鏡"], ["凸面鏡", "視野廣", "轉彎鏡、後視鏡"]]}],
+  lab:labReflect,
+  qs:[
+   {t:'slider',q:'雷射光照到平面鏡。拖動入射角 θ，讓「反射光與鏡面的夾角」剛好是 30°。',controls:[{id:'th',label:'入射角 θ',min:0,max:80,step:5,val:20,unit:'°'}],
+    readout:v=>`反射角 = ${v.th}°　反射光與鏡面夾角 X = 90° − ${v.th}° = <b>${90-v.th}°</b>`,viz:(ctx,W,H,v)=>drawReflect(ctx,W,H,v.th),
+    check:v=>v.th===60,hint:'法線和鏡面垂直。X 加上反射角等於 90°。',why:'X = 90° − θ = 30°，所以 θ = 60°。'},
+   {t:'choice',q:'站在鏡子前 1 m 拍鏡中的自己，相機要對焦在距離相機多遠的地方，照片才會清楚？',opts:['1 m','2 m','3 m','4 m'],ans:1,hint:'像在鏡子後面多遠？再加上你到鏡子的距離。',why:'像在鏡後 1 m，離相機 1 + 1 = 2 m，要對焦在 2 m。'},
+   {t:'choice',q:'你面向平面鏡往前走 1 m，你和鏡中的像之間的距離會怎麼變？',opts:['縮短 2 m','縮短 1 m','不變','變長 2 m'],ans:0,hint:'你靠近 1 m，像也會靠近 1 m。',why:'你和像各靠近鏡子 1 m，兩者距離縮短 2 m。'},
+   {t:'sort',q:'下面的東西用到凹面鏡還是凸面鏡？每一個都選選看。',buckets:[['concave','凹面鏡'],['convex','凸面鏡']],
+    items:[['探照燈','concave'],['山路彎道的反射鏡','convex'],['汽車車前燈','concave'],['大貨車的後視鏡','convex'],['化妝鏡（放大痘痘）','concave'],['路口轉彎鏡','convex'],['手電筒','concave'],['耳鼻喉科醫生的額鏡','concave']],
+    hint:'凹面鏡把光「聚」起來或變成平行光；凸面鏡讓視野變廣、像縮小。',why:'探照燈、車燈、手電筒、化妝鏡、額鏡都是凹面鏡；轉彎鏡與後視鏡是凸面鏡，視野比較廣。'}
+  ]},
+{ id:'refract',acc:'#2F6FA1',icon:'refr',title:'折射：光轉彎了',formula:'快 → 慢，偏向法線',
+  mission:'選「空氣 → 水」，拖動入射角，比較入射角和折射角。再換成「水 → 空氣」看看會發生什麼事。',
+  tables:[{"t": "折射", "h": ["光的走向", "偏折", "角度"], "r": [["快 → 慢", "偏向法線", "折射角 < 入射角"], ["慢 → 快", "偏離法線", "折射角 > 入射角"], ["垂直射入", "不偏折", "0°"]]}, {"t": "光速", "h": ["介質", "快慢"], "r": [["空氣", "最快"], ["水", "中等"], ["玻璃", "最慢"]]}],
+  lab:labRefract,
+  qs:[
+   {t:'slider',q:'光從空氣射進水中。拖動入射角，找出光「完全不偏折」、直線前進的入射角。',controls:[{id:'th',label:'入射角',min:0,max:80,step:5,val:40,unit:'°'}],
+    readout:v=>`入射角 ${v.th}° → 折射角 <b>${n2(refractCalc('air','water',v.th),1)}°</b>`,viz:(ctx,W,H,v)=>drawRefract(ctx,W,H,'air','water',v.th),
+    check:v=>v.th===0,hint:'看圖：什麼時候入射光和折射光會連成同一條直線？',why:'垂直射入界面（入射角 0°）時，光沿法線前進，不偏折。'},
+   {t:'choice',q:'光由空氣斜射入水中，折射角會怎樣？',opts:['比入射角小，偏向法線','比入射角大，偏離法線','和入射角一樣','變成 90°'],ans:0,hint:'空氣中光速比水中快，是「快進慢」。',why:'光從速度快的介質進入速度慢的介質，會偏向法線，折射角比入射角小。'},
+   {t:'choice',q:'光從介質甲斜射入介質乙，折射角小於入射角。哪一個介質裡的光速比較快？',opts:['甲','乙','一樣快','無法判斷'],ans:0,hint:'折射角較小是偏向法線，那是快進慢，還是慢進快？',why:'偏向法線代表光由快的介質進入慢的介質，所以甲中的光速比較快。'},
+   {t:'choice',q:'站在岸邊看池裡的魚，魚看起來的位置和實際位置相比？',opts:['看起來比較淺','看起來比較深','位置完全一樣','看起來在水面上'],ans:0,hint:'光從水進入空氣時偏離法線，眼睛卻以為光是直線來的。',why:'魚的光由水進入空氣，偏離法線。眼睛沿著進入眼睛的光線反向去找，看到的像比魚實際位置淺。'}
+  ]},
+{ id:'lens',acc:'#84487A',icon:'lens',title:'最終關：透鏡成像',formula:'三條光線找像',boss:true,
+  mission:'把蠟燭移到五種位置各看一次（凸透鏡），集滿 5 個印章就能開始闖關。看看光線怎麼走、像怎麼變。',
+  tables:[{"t": "凸透鏡成像", "h": ["物距 u", "倒／正", "大小", "實／虛"], "r": [["u > 2F", "倒立", "縮小", "實像"], ["u = 2F", "倒立", "等大", "實像"], ["F < u < 2F", "倒立", "放大", "實像"], ["u = F", "不成像", "—", "—"], ["u < F", "正立", "放大", "虛像"]]}, {"t": "凹透鏡成像", "h": ["物距 u", "倒／正", "大小", "實／虛"], "r": [["任何位置", "正立", "縮小", "虛像"]]}, {"t": "三條光線", "h": ["入射光", "折射後"], "r": [["平行主軸", "過焦點"], ["過透鏡中心", "直進"], ["過焦點", "平行主軸"]]}, {"t": "遮住一半透鏡", "h": ["像", "亮度"], "r": [["仍完整", "變暗"]]}],
+  lab:labLens,gate:5,
+  qs:[
+   {t:'lens',q:'把蠟燭移到「螢幕上能得到倒立、縮小的實像」的位置。',u:15,range:[3,35],check:u=>u>20,hint:'要縮小，物體要離透鏡比較遠，看看光線會在 2F 內還是 2F 外交會。',why:'物體在 2F 以外（u > 2F），像在 F 與 2F 之間，倒立縮小實像。照相機就是這樣成像。'},
+   {t:'lens',q:'把蠟燭移到「螢幕上完全沒有像」的位置（光線出來互相平行）。',u:25,range:[3,35],check:u=>u===10,hint:'光線互相平行，就不會在任何地方交會。物體要放在哪一個點？',why:'物體剛好在焦點（u = F）時，折射光平行射出，不成像。'},
+   {t:'lens',q:'把凸透鏡當放大鏡用（焦距 10 cm）。在物距小於焦距的範圍內，找出像「放大最多」的位置。',u:3,range:[2,9.5],readout:'mag',check:u=>u>=9,hint:'注意「放大倍數」的變化，物體往哪個方向移，倍數愈來愈大？',why:'物體愈靠近焦點，正立虛像愈大。但到焦點（u = F）時就看不到像了。'},
+   {t:'choice',q:'做凸透鏡成像實驗時，物距 U = 50 cm，螢幕上最清楚的像距 V 也是 50 cm（像和物一樣大）。那麼 U 調到幾 cm 時，螢幕上沒有像？',opts:['25 cm','50 cm','75 cm','100 cm'],ans:0,hint:'像和物一樣大，代表物體在 2F。那焦距 F 是多少？不成像的位置是 u = F。',why:'U = V = 2F = 50，所以 F = 25 cm。物體放在 U = F = 25 cm，光線平行射出，沒有像。'},
+   {t:'choice',q:'魔術眼鏡：不論遠處的山，或眼前的課本，透過它看都是「正立、縮小」的像。這是什麼鏡片？',opts:['凹透鏡','凸透鏡','凹面鏡','凸面鏡'],ans:0,hint:'到實驗室切換「凹透鏡」，看看不同距離的像有什麼共同點。',why:'凹透鏡不論物體放在哪裡，都只成正立、縮小的虛像。'},
+   {t:'choice',q:'近視的人看不清楚遠方的東西，應該配戴哪一種鏡片矯正？',opts:['凹透鏡','凸透鏡','平面鏡','凹面鏡'],ans:0,hint:'近視是光線太早聚在視網膜前面，要先讓光線怎樣？',why:'近視者的像落在視網膜前，要先用凹透鏡讓光線發散，像才會往後移到視網膜上。度數愈高，鏡片周圍愈厚。'},
+   {t:'choice',q:'把凸透鏡的上半部用黑紙遮住，螢幕上的像會變成怎樣？',opts:['仍是完整的像，但比較暗','只剩下半部的像','只剩上半部的像','完全沒有像'],ans:0,hint:'到實驗室按「用黑紙遮住上半部透鏡」，看看還剩幾條光線、像有沒有缺角。',why:'物體上每一點發出的光線有很多條，剩下的光線仍會在同一點交會，所以像是完整的，只是光線變少，像變暗。'}
+  ]}
+];
+
+/* =========================================================
+   進度、畫面
+   ========================================================= */
+const KEY='physics-quest-v1';
+let prog={};
+try{prog=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){prog={};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(prog));}catch(e){}}
+function res(i){const id=STAGES[i].id;if(!prog[id])prog[id]=[];return prog[id];}
+function stageDone(i){const r=res(i);return STAGES[i].qs.every((q,k)=>r[k]);}
+function stageStars(i){return res(i).filter(x=>x&&x.first).length;}
+function unlocked(i){return true;}
+const totalQ=STAGES.reduce((a,s)=>a+s.qs.length,0);
+const totalStars=()=>STAGES.reduce((a,s,i)=>a+stageStars(i),0);
+const allDone=()=>STAGES.every((s,i)=>stageDone(i));
+
+const app=document.getElementById('app');
+let cleanup=[];
+function leave(){cleanup.forEach(f=>{try{f();}catch(e){}});cleanup=[];}
+function go(fn){leave();app.innerHTML='';window.scrollTo(0,0);fn();}
+
+/* ---------- 首頁 ---------- */
+function Home(){
+  const doneN=STAGES.filter((s,i)=>stageDone(i)).length;
+  const hero=h('header',{class:'hero'},
+    h('span',{class:'scope'},'國二理化・第二次段考　波動、聲音、光'),
+    h('h1',null,'光與聲',h('span',null,'闖關基地')),
+    h('p',{class:'lead'},'七個關卡，每關先動手做實驗，再回答問題。不用背，自己拉一拉、看一看，答案會自己跑出來。'));
+  const wc=document.createElement('canvas');wc.className='heroWave';hero.append(wc);
+  const cb={cv:wc};
+  let ph=0;const ctx=wc.getContext('2d');
+  function size(){const w=hero.clientWidth||600,d=window.devicePixelRatio||1;wc.width=w*d;wc.height=84*d;wc.style.height='84px';ctx.setTransform(d,0,0,d,0,0);cb.W=w;}
+  size();
+  const draw=()=>{const W=cb.W;ctx.clearRect(0,0,W,84);
+    [['#B79C8E',34,.9,0],['#8F7B69',22,1.5,1.2],['#5E5B4C',12,2.4,2.4]].forEach(([c,a,k,o])=>{ctx.beginPath();ctx.strokeStyle=c;ctx.lineWidth=2.6;
+      for(let x=0;x<=W;x+=3){const y=42+a*.5*Math.sin(x/(60/k)-ph*k+o);x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();});};
+  draw();
+  const stop=loop(dt=>{if(!reduced){ph+=dt*1.1;draw();}});
+  const onr=()=>{size();draw();};window.addEventListener('resize',onr);
+  cleanup.push(stop,()=>window.removeEventListener('resize',onr));
+
+  const pct=Math.round(totalStars()/totalQ*100);
+  const pr=h('div',{class:'prog'},h('div',{class:'bar','aria-label':'闖關進度'},h('i',{style:'width:'+(doneN/STAGES.length*100)+'%'})),
+    h('span',null,`已通過 ${doneN} / ${STAGES.length} 關　★ ${totalStars()} / ${totalQ}`));
+  const map=h('div',{class:'map'});
+  STAGES.forEach((s,i)=>{
+    const ok=unlocked(i),dn=stageDone(i);
+    const t=h('button',{type:'button',class:'tile'+(dn?' done':''),style:'--acc:'+s.acc,'aria-disabled':String(!ok),onclick:()=>{if(ok)go(()=>Stage(i));}},
+      h('div',{class:'no',html:`<span>${i+1}</span><small>第${i+1}關</small>${ICON[s.icon]}`}),
+      h('h2',null,s.title),h('div',{class:'fx'},s.formula),
+      h('div',{class:'st'},ok?h('span',{class:'stars'},'★'.repeat(stageStars(i))+'☆'.repeat(s.qs.length-stageStars(i))):'先通過第 '+i+' 關',ok&&!dn&&res(i).length?h('span',null,'進行中'):null));
+    map.append(t);
+  });
+  const ct=h('button',{type:'button',class:'tile certTile'+(allDone()?' done':''),style:'--acc:#5E5B4C','aria-disabled':String(!allDone()),onclick:()=>{if(allDone())go(Cert);}},
+    h('div',{class:'no',html:'<span>✦</span><small>證書</small>'}),
+    h('h2',null,'通關證書'),h('div',{class:'fx'},'七關全部通過就能領取'),h('div',{class:'st'},allDone()?'可以領取了':'還差 '+(STAGES.length-doneN)+' 關'));
+  map.append(ct);
+  app.append(hero,pr,map);
+}
+
+/* ---------- 關卡頁 ---------- */
+function Stage(i){
+  const S=STAGES[i];
+  const top=h('div',{class:'top'},h('button',{type:'button',class:'ghost',onclick:()=>go(Home)},'回到地圖'),
+    h('h1',{class:'stageTitle'},h('span',{style:'color:'+S.acc},'第 '+(i+1)+' 關　'),S.title));
+  const labRoot=h('div'),quizRoot=h('div');
+  const gate={n:0,total:S.gate||0,listeners:[]};
+  const ctx={setGate(n,t){gate.n=n;gate.total=t;gate.listeners.forEach(f=>f());}};
+  const lab=h('section',{class:'panel label'},h('div',{class:'ptag'},'實驗室'),h('div',{class:'mission'},S.mission),labRoot);
+  const quiz=h('section',{class:'panel label'},h('div',{class:'ptag'},'闖關題'),quizRoot);
+  const pts=h('details',{class:'pts label'},h('summary',null,'卡住了？打開重點小卡'),S.tables.map(tb=>h('div',{class:'kt'},h('div',{class:'ktt'},tb.t),h('div',{class:'ktw'},h('table',null,h('thead',null,h('tr',null,tb.h.map(c=>h('th',null,c)))),h('tbody',null,tb.r.map(r=>h('tr',null,r.map(c=>h('td',null,c))))))))));
+  const grid=h('div',{class:'stageGrid'},lab,quiz);
+  const wrapper=h('div',{style:'--acc:'+S.acc},top,grid,pts);
+  app.append(wrapper);
+  const L=S.lab(labRoot,ctx);
+  cleanup.push(()=>L&&L.destroy&&L.destroy());
+  Quiz(quizRoot,i,gate);
+}
+
+/* ---------- 題目引擎 ---------- */
+function Quiz(root,si,gate){
+  const S=STAGES[si],r=res(si),n=S.qs.length;
+  let cur=0;while(cur<n&&r[cur])cur++;
+  let qCleanup=null;
+  function clearQ(){if(qCleanup){try{qCleanup();}catch(e){}qCleanup=null;}}
+  cleanup.push(clearQ);
+  function render(){
+    clearQ();root.innerHTML='';
+    if(gate.total&&gate.n<gate.total){
+      root.append(h('div',{class:'lock'},h('b',null,'先集章再闖關'),h('p',null,`在左邊的實驗室集滿 ${gate.total} 個印章（現在 ${gate.n} / ${gate.total}）。`)));
+      return;
+    }
+    const pills=h('div',{class:'pills'},S.qs.map((q,k)=>h('span',{class:'pill'+(r[k]?' ok':k===cur?' on':'')},r[k]?'✓':String(k+1))));
+    root.append(pills);
+    if(cur>=n){clearBanner();return;}
+    question(cur);
+  }
+  gate.listeners.push(()=>{if(root.querySelector('.lock')||gate.n>=gate.total)render();});
+  function clearBanner(){
+    const sc=stageStars(si);
+    const nextOk=si<STAGES.length-1;
+    const act=h('div',{class:'actions',style:'justify-content:center'},
+      h('button',{type:'button',class:'btn',onclick:()=>go(Home)},'回到地圖'),
+      si<STAGES.length-1?h('button',{type:'button',class:'btn acc',onclick:()=>go(()=>Stage(si+1))},'前往第 '+(si+2)+' 關'):
+        h('button',{type:'button',class:'btn acc',onclick:()=>go(Cert)},'領取通關證書'));
+    root.append(h('div',{class:'clear'},h('div',{class:'seal',html:seal(S.acc,String(si+1),130)}),h('h3',null,'第 '+(si+1)+' 關通過'),
+      h('p',null,h('span',{class:'stars',style:'font-size:22px'},'★'.repeat(sc)+'☆'.repeat(n-sc))),
+      h('p',{style:'color:#5E5B4C;margin:4px 0 10px'},sc===n?'全部一次答對，太強了。':'星星是一次就答對的題數，可以再回來挑戰。'),act));
+  }
+  function question(k){
+    const q=S.qs[k];let attempts=0,solved=false;
+    const card=h('div',{class:'qcard'});
+    const fb=h('div',{'aria-live':'polite'});
+    const nextBtn=h('button',{type:'button',class:'btn acc',onclick:()=>{cur=k+1;render();}},k===n-1?'完成本關':'下一題');
+    function done(){
+      solved=true;r[k]={first:attempts===0};save();
+      fb.innerHTML='';fb.append(h('div',{class:'fb good'},h('b',null,attempts===0?'答對了！':'答對了，再多想一次就更穩了'),q.why));
+      card.append(h('div',{class:'actions'},nextBtn));nextBtn.focus({preventScroll:true});
+      const pl=root.querySelectorAll('.pill')[k];if(pl){pl.className='pill ok';pl.textContent='✓';}
+    }
+    function wrong(){attempts++;card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake');
+      fb.innerHTML='';fb.append(h('div',{class:'fb hint'},h('b',null,'再想想'),q.hint));}
+    card.append(h('p',{class:'qtext'},q.q));
+    if(q.t==='choice'){
+      const box=h('div',{class:'opts'});const order=shuffle(q.opts.map((o,idx)=>idx));
+      order.forEach((idx,pos)=>{
+        const b=h('button',{type:'button',class:'opt',onclick:()=>{
+          if(solved)return;
+          if(idx===q.ans){b.classList.add('right');box.querySelectorAll('.opt').forEach(x=>x.disabled=true);done();}
+          else{b.classList.add('wrong');b.disabled=true;wrong();}}},
+          h('span',{class:'ltr'},'ABCD'[pos]),h('span',null,q.opts[idx]));
+        box.append(b);});
+      card.append(box);
+    }else if(q.t==='slider'){
+      const vals={};const sls={};
+      const ctl=h('div',{class:'ctls'});
+      q.controls.forEach(c=>{vals[c.id]=c.val;sls[c.id]=slider({label:c.label,min:c.min,max:c.max,step:c.step,val:c.val,unit:c.unit,onInput:v=>{vals[c.id]=v;upd();}});ctl.append(sls[c.id].el);});
+      const ro=h('div',{class:'readout'});
+      let cb=null;
+      if(q.viz){const w=h('div',{class:'cvwrap'});card.append(w);cb=mkCanvas(w,ww=>Math.round(Math.max(170,ww*.4)));cb.draw=()=>{drawBg(cb);q.viz(cb.ctx,cb.W,cb.H,vals);};cb.draw();qCleanup=()=>cb.destroy();}
+      function upd(){ro.innerHTML='<div class="big">'+q.readout(vals)+'</div>';if(cb)cb.draw();}
+      upd();
+      const ok=h('button',{type:'button',class:'btn',onclick:()=>{if(solved)return;if(q.check(vals)){ok.disabled=true;Object.values(sls).forEach(s=>s.el.querySelector('input').disabled=true);done();}else wrong();}},'確認答案');
+      card.append(ctl,ro,h('div',{class:'actions'},ok));
+    }else if(q.t==='sort'){
+      const pick={};const rows=[];
+      q.items.forEach(([name,ans],ii)=>{
+        const row=h('div',{class:'sortrow'},h('span',null,name));
+        q.buckets.forEach(([key,label])=>{const b=h('button',{type:'button',class:'segbtn','aria-selected':'false',onclick:()=>{if(solved)return;pick[ii]=key;row.querySelectorAll('.segbtn').forEach(x=>x.setAttribute('aria-selected',String(x===b)));row.classList.remove('bad');}},label);row.append(b);});
+        rows.push(row);card.append(row);});
+      const ok=h('button',{type:'button',class:'btn',onclick:()=>{if(solved)return;
+        if(Object.keys(pick).length<q.items.length){fb.innerHTML='';fb.append(h('div',{class:'fb hint'},h('b',null,'還沒選完'),'每一個都要選凹面鏡或凸面鏡。'));return;}
+        let bad=0;q.items.forEach(([,ans],ii)=>{const okk=pick[ii]===ans;rows[ii].classList.toggle('bad',!okk);if(!okk)bad++;});
+        if(bad===0){rows.forEach(rw=>rw.classList.add('good'));ok.disabled=true;done();}else{wrong();fb.firstChild.append(h('div',null,'紅色的列選錯了，改一改再確認。'));}
+      }},'確認答案');
+      card.append(h('div',{class:'actions'},ok));
+    }else if(q.t==='lens'){
+      const lab=LensLab(card,{type:'convex',u:q.u,umin:q.range[0],umax:q.range[1],readout:q.readout||'none'});
+      qCleanup=()=>lab.destroy();
+      const ok=h('button',{type:'button',class:'btn',onclick:()=>{if(solved)return;if(q.check(lab.getU())){ok.disabled=true;card.querySelector('input').disabled=true;done();}else wrong();}},'確認這個位置');
+      card.append(h('div',{class:'actions'},ok));
+    }
+    card.append(fb);root.append(card);
+  }
+  render();
+}
+
+/* ---------- 證書 ---------- */
+function Cert(){
+  const ts=totalStars(),acc=ts/totalQ;
+  const rank=acc>=.9?'光聲大師':acc>=.7?'實驗達人':'闖關勇者';
+  const d=new Date();const date=`${d.getFullYear()} / ${d.getMonth()+1} / ${d.getDate()}`;
+  const nameIn=h('input',{class:'nameIn',type:'text',id:'nm',placeholder:'點這裡輸入你的名字',maxlength:'12','aria-label':'你的名字',autocomplete:'off'});
+  const seals=h('div',{class:'seals'},STAGES.map((s,i)=>h('span',{html:seal(s.acc,String(i+1),62),title:s.title})));
+  const cert=h('div',{class:'cert label'},h('div',{class:'in'},
+    h('h2',null,'通關證書'),h('p',{class:'sub'},'國二理化・第二次段考　光與聲闖關基地'),
+    nameIn,
+    h('p',{class:'body'},'完成波動、聲音、光的直進、反射、折射與透鏡成像共七個關卡，用自己的觀察找到了答案。'),
+    h('div',{class:'rank'},rank),
+    seals,
+    h('div',{class:'meta'},h('span',null,'一次答對 '+ts+' / '+totalQ+' 題'),h('span',null,date))));
+  app.append(h('div',{class:'top'},h('button',{type:'button',class:'ghost',onclick:()=>go(Home)},'回到地圖')),
+    h('div',{class:'shotTip'},'輸入名字後，請截圖這個畫面傳給老師。'),cert,
+    h('div',{class:'actions',style:'justify-content:center;margin-top:22px'},
+      (function(){let armed=false;const b=h('button',{type:'button',class:'ghost',onclick:()=>{if(!armed){armed=true;b.textContent='再按一次，確定清除所有紀錄';return;}prog={};save();go(Home);}},'清除紀錄，重新闖關');return b;})()));
+}
+
+go(Home);
+</script>
+</body>
+</html>
